@@ -9,8 +9,9 @@
 #include <assert.h>
 #include <stdlib.h>
 
+#include <vector>
 #include <algorithm>
-
+#include <string>//me add
 #define ASSERT assert // RTree uses ASSERT( condition )
 #ifndef Min
 #define Min std::min
@@ -18,7 +19,7 @@
 #ifndef Max
 #define Max std::max
 #endif //Max
-
+using namespace std;
 //
 // RTree.h
 //
@@ -29,6 +30,17 @@
 #define RTREE_DONT_USE_MEMPOOLS // This version does not contain a fixed memory allocator, fill in lines with EXAMPLE to implement one.
 #define RTREE_USE_SPHERICAL_VOLUME // Better split classification, may be slower on some systems
 
+//***********************************************
+//原文件里面没有，是我自己添加的结构体
+//
+//***********************************************
+typedef struct FileInfo
+{
+public:
+	FILE* fp;//指向文件的指针
+	std::string strResolutionLevel;//分辨率水平
+}structFileInfo;
+//typedef 
 // Fwd decl
 class RTFileStream;  // File I/O helper class, look below for implementation and notes.
 
@@ -67,7 +79,7 @@ public:
 		MINNODES = TMINNODES,                         ///< Min elements in node
 	};
 
-	typedef bool (*t_resultCallback)(DATATYPE, void*);
+	typedef bool (*t_resultCallback)(DATATYPE, void*,vector<DATATYPE>&);
 
 public:
 
@@ -93,7 +105,7 @@ public:
 	/// \param a_resultCallback Callback function to return result.  Callback should return 'true' to continue searching
 	/// \param a_context User context to pass as parameter to a_resultCallback
 	/// \return Returns the number of entries found
-	int Search(const ELEMTYPE a_min[NUMDIMS], const ELEMTYPE a_max[NUMDIMS], t_resultCallback a_resultCallback, void* a_context);
+	void Search(const ELEMTYPE a_min[NUMDIMS], const ELEMTYPE a_max[NUMDIMS], t_resultCallback a_resultCallback, void* a_context,vector<DATATYPE>&vSearchResults);
 
 	/// Remove all entries from tree
 	void RemoveAll();
@@ -355,7 +367,7 @@ protected:
 	void FreeListNode(ListNode* a_listNode);
 	bool Overlap(Rect* a_rectA, Rect* a_rectB);
 	void ReInsert(Node* a_node, ListNode** a_listNode);
-	bool Search(Node* a_node, Rect* a_rect, int& a_foundCount, t_resultCallback a_resultCallback, void* a_context);
+	bool Search(Node* a_node, Rect* a_rect, vector<DATATYPE>& a_foundCount, t_resultCallback a_resultCallback, void* a_context);
 	void RemoveAllRec(Node* a_node);
 	void Reset();
 	void CountRec(Node* a_node, int& a_count);
@@ -444,8 +456,6 @@ public:
 		return fread((void*)a_array, sizeof(TYPE) * a_count, 1, m_file);
 	}
 };
-
-
 RTREE_TEMPLATE
 	RTREE_QUAL::RTree()
 {
@@ -485,7 +495,6 @@ RTREE_TEMPLATE
 		ASSERT(a_min[index] <= a_max[index]);
 	}
 #endif //_DEBUG
-
 	Branch branch;
 	branch.m_data = a_dataId;
 	branch.m_child = NULL;
@@ -523,7 +532,7 @@ RTREE_TEMPLATE
 
 
 RTREE_TEMPLATE
-	int RTREE_QUAL::Search(const ELEMTYPE a_min[NUMDIMS], const ELEMTYPE a_max[NUMDIMS], t_resultCallback a_resultCallback, void* a_context)
+	void RTREE_QUAL::Search(const ELEMTYPE a_min[NUMDIMS], const ELEMTYPE a_max[NUMDIMS], t_resultCallback a_resultCallback, void* a_context,vector<DATATYPE>&vSearchResults)
 {
 #ifdef _DEBUG
 	for(int index=0; index<NUMDIMS; ++index)
@@ -542,10 +551,7 @@ RTREE_TEMPLATE
 
 	// NOTE: May want to return search result another way, perhaps returning the number of found elements here.
 
-	int foundCount = 0;
-	Search(m_root, &rect, foundCount, a_resultCallback, a_context);
-
-	return foundCount;
+	Search(m_root, &rect, vSearchResults, a_resultCallback, a_context);
 }
 
 
@@ -1551,7 +1557,7 @@ RTREE_TEMPLATE
 
 // Search in an index tree or subtree for all data retangles that overlap the argument rectangle.
 RTREE_TEMPLATE
-	bool RTREE_QUAL::Search(Node* a_node, Rect* a_rect, int& a_foundCount, t_resultCallback a_resultCallback, void* a_context)
+	bool RTREE_QUAL::Search(Node* a_node, Rect* a_rect, vector<DATATYPE>&vSearchResults, t_resultCallback a_resultCallback, void* a_context)
 {
 	ASSERT(a_node);
 	ASSERT(a_node->m_level >= 0);
@@ -1564,7 +1570,7 @@ RTREE_TEMPLATE
 		{
 			if(Overlap(a_rect, &a_node->m_branch[index].m_rect))
 			{
-				if(!Search(a_node->m_branch[index].m_child, a_rect, a_foundCount, a_resultCallback, a_context))
+				if(!Search(a_node->m_branch[index].m_child, a_rect, vSearchResults, a_resultCallback, a_context))
 				{
 					// The callback indicated to stop searching
 					return false;
@@ -1580,13 +1586,12 @@ RTREE_TEMPLATE
 			if(Overlap(a_rect, &a_node->m_branch[index].m_rect))
 			{
 				DATATYPE& id = a_node->m_branch[index].m_data;
-				cout<< a_node->m_branch[index].m_data<<endl;
-				++a_foundCount;
+				//cout<<a_node->m_branch[index].m_data<<endl;
 
 				// NOTE: There are different ways to return results.  Here's where to modify
 				if(a_resultCallback)
 				{
-					if(!a_resultCallback(id, a_context))
+					if(!a_resultCallback(id, a_context,vSearchResults))
 					{
 						return false; // Don't continue searching
 					}
