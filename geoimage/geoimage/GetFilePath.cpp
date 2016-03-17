@@ -50,8 +50,11 @@ bool CGetFilePath::get(string dir,vector<CReturnFileInfo*>&vFileInfo)
 		if (fs::is_directory(iter->status()))  
 		{  
 			//get_filenames(iter->path().string(), filenames);
-			cout<<"there exits subdirectory! "<<endl;
-			return false;  
+			/*cout<<"there exits subdirectory! "<<endl;
+			return false;  */
+			cout<<iter->path().string()<<endl;
+			get(iter->path().string(),vFileInfo);
+
 		} 
 
 	}

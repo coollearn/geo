@@ -45,8 +45,6 @@ bool CIndexOperation::CreateIndex(string dir)
 
 			osg::Node* node = osgDB::readNodeFile((*it)->strFilePath);
 			string path=(*it)->strFilePath;
-			/*cout<<path<<endl;
-			cout<<(*it)->strResulationLevel<<endl;*/
 			osg::ComputeBoundsVisitor cbVisitor;
 			node->accept(cbVisitor);
 			osg::BoundingBox bb = cbVisitor.getBoundingBox();
@@ -55,10 +53,6 @@ bool CIndexOperation::CreateIndex(string dir)
 			fp=fopen(path.c_str(),"r");
 			iFileInfo->fp=fp;
 			iFileInfo->strResolutionLevel=(*it)->strResolutionLevel;
-			/*cout<<(float)bb.xMin()<<endl;
-			cout<<(float)bb.yMin()<<endl;
-			cout<<(float)bb.xMax()<<endl;
-			cout<<(float)bb.yMax()<<endl;*/
 			Rect struct_Rect((float)bb.xMin(),(float)bb.yMin(),(float)bb.xMax(),(float)bb.yMax());
 			RtreeIndex.Insert(struct_Rect.min,struct_Rect.max,iFileInfo);
 		}

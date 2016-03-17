@@ -170,7 +170,8 @@ int main2(){
 }
 int main()
 {
-	string dir="D:\\OutData\\osg\\test0_root_L0_X0_Y0";
+	//string dir="D:\\OutData\\osg\\test0_root_L0_X0_Y0";
+	string dir="D:\\OutData\\osg";
 	CIndexOperation iIndexOperation;
 	iIndexOperation.CreateIndex(dir);
 	Rect struct_SearchRect(-110.625,49.375,-110,50.0004);
@@ -180,8 +181,8 @@ int main()
 	vector<structFileInfo*>::iterator itt;
 	for(itt=vSearchResults.begin();itt!=vSearchResults.end();itt++)
 	{
-		cout<<"hhh"<<endl;
-		cout<<(*itt)->strResolutionLevel<<endl;
+	cout<<"hhh"<<endl;
+	cout<<(*itt)->strResolutionLevel<<endl;
 	}
 	iIndexOperation.traverse();
 	return 0;
