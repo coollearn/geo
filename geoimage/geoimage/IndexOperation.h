@@ -1,6 +1,19 @@
 #pragma once
-#include<string>
-#include"GetFilePath.h"
+#include <iostream>
+#include <string>
+#include <vector> 
+#include<osgViewer/Viewer>
+#include<osgDB/ReadFile>
+#include <osg/ComputeBoundsVisitor>  
+#include <string>
+#include <fstream>
+#include <io.h>
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
+#include <boost/format.hpp>   
+#include <boost/tokenizer.hpp>     
+#include <boost/algorithm/string.hpp> 
+
 #include"RTree.h"
 
 #include<iostream>
@@ -30,11 +43,15 @@ class CIndexOperation
 public:
 	CIndexOperation(void);
 	~CIndexOperation(void);
-    bool CreateIndex(string dir);
 	void SearchImage(Rect rect,string ResulationLeval, t_resultCallback resultCallback ,vector<structFileInfo*>&vSearchResults);
 	void traverse();
+	bool CrateIndex(string dir);
+	int GetFileAmount();
+	char line[1024];
 private:
 	typedef RTree<structFileInfo*, float, 2, float> RTree;
 	RTree RtreeIndex;
+	ifstream *fin;
+	int FileAmount;
 	
 };

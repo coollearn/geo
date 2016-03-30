@@ -39,6 +39,7 @@ typedef struct FileInfo
 public:
 	FILE* fp;//指向文件的指针
 	std::string strResolutionLevel;//分辨率水平
+	std::string strFilePath;//文件路径
 }structFileInfo;
 //typedef 
 // Fwd decl

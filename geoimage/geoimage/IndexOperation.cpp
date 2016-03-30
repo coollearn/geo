@@ -1,8 +1,11 @@
 #include "IndexOperation.h"
-
+#include <tchar.h>
 
 CIndexOperation::CIndexOperation(void)
 {
+	//line={0};
+	fin=NULL;
+	FileAmount=0;
 }
 
 
@@ -19,55 +22,70 @@ CIndexOperation::~CIndexOperation(void)
 // Qualifier:
 // Parameter: string dir 要建立索引的图片文件所在文件夹的路径
 //************************************
-bool CIndexOperation::CreateIndex(string dir)
+bool CIndexOperation::CrateIndex(string dir)
 {
-	CGetFilePath gfp;
-	vector<CReturnFileInfo*> vFileInfo;//用来存放返回的图片文件的信息
-	clock_t t_begin,t_end; 
-	t_begin=clock();
-	if(gfp.get(dir,vFileInfo)){
-		int counter=0;
-		cout<<"正在建立索引"<<endl<<endl;
-		vector<CReturnFileInfo*>::iterator it;
-		for(it=vFileInfo.begin();it!=vFileInfo.end();it++)
-		{   
-			//进度条
-			cout<<"<";
-		    counter++;
-			if(counter==40)
+	namespace fs = boost::filesystem;
+	fs::path path(dir);  
+	if (!fs::exists(path))  
+	{  
+		cout<<"wrong directory path! "<<endl;
+		return false;  
+	}  
+
+	fs::directory_iterator end_iter;  
+	for (fs::directory_iterator iter(path); iter!=end_iter; ++iter)  
+	{  
+		if (fs::is_regular_file(iter->status()))  
+		{
+			if(iter->path().filename().string()=="000.txt")
 			{
-		        cout<<"\r";
-				for(int i=0;i<41;i++)
-					cout<<" ";
-				cout<<"\r";
-				counter=0;
+			   fin=new ifstream(iter->path().string());
+			   continue;
+			   //inputFile.
 			}
+			FileAmount++;
+			//获取文件扩展名
+			string strExtention=iter->path().extension().string();
+			if(strExtention==".osg")
+			{
+				fin->getline(line, sizeof(line));
+				stringstream word(line);
+				string xMin="",yMin="",xMax="",yMax="";
+				word>>xMin>>yMin>>xMax>>yMax;
+				float fxMin=atof(xMin.c_str());
+				float fyMin=atof(yMin.c_str());
+				float fxMax=atof(xMax.c_str());
+				float fyMax=atof(yMax.c_str());
 
-			osg::Node* node = osgDB::readNodeFile((*it)->strFilePath);
-			string path=(*it)->strFilePath;
-			osg::ComputeBoundsVisitor cbVisitor;
-			node->accept(cbVisitor);
-			osg::BoundingBox bb = cbVisitor.getBoundingBox();
-			FileInfo *iFileInfo=new FileInfo();
-			FILE *fp;
-			fp=fopen(path.c_str(),"r");
-			iFileInfo->fp=fp;
-			iFileInfo->strResolutionLevel=(*it)->strResolutionLevel;
-			Rect struct_Rect((float)bb.xMin(),(float)bb.yMin(),(float)bb.xMax(),(float)bb.yMax());
-			RtreeIndex.Insert(struct_Rect.min,struct_Rect.max,iFileInfo);
+				string FileName= iter->path().filename().string();
+				string FilePath=iter->path().string();
+				std::vector<std::string> vSegTag;
+				boost::split(vSegTag, FileName, boost::is_any_of(_T("_")));
+				FileInfo *iFileInfo=new FileInfo();
+				FILE *fp=NULL;
+				//fp=fopen(iter->path().filename().string().c_str(),"r");
+				iFileInfo->fp=fp;
+				iFileInfo->strResolutionLevel=vSegTag[2];
+				iFileInfo->strFilePath=FilePath;
+				cout<<FilePath<<" "<<fxMin<<" "<<fyMin<<" "<<fxMax<<" "<<fyMax<<endl;
+				Rect struct_Rect(fxMin,fyMin,fxMax,fyMax);
+				RtreeIndex.Insert(struct_Rect.min,struct_Rect.max,iFileInfo);
+			}  
+		} 
+		if (fs::is_directory(iter->status()))  
+		{  
+			CrateIndex(iter->path().string());
+
 		}
+		
 	}
-	t_end=clock();
-	cout<<endl<<endl<<"索引建立完毕,用时:"<<(double)(t_end-t_begin)<<" 毫秒"<<endl;
-
-	//清除vFileInfo占用的缓存
-	vector<CReturnFileInfo*>::iterator it;
-	for(it=vFileInfo.begin();it!=vFileInfo.end();it++){
-		//	cout<<(*it)->strFilePath<<endl;
-		delete *it;
-		*it=NULL;
+	if(fin!=NULL)
+	{
+		fin->clear();
+		fin->close();
+		delete fin;
+		fin=NULL;
 	}
-	vector<CReturnFileInfo*>().swap(vFileInfo);
 	return true;
 }
 void CIndexOperation::SearchImage(Rect rect,string ResulationLeval, t_resultCallback resultCallback ,vector<structFileInfo*>&vSearchResults){
@@ -92,4 +110,8 @@ void CIndexOperation::traverse()
 		cout << "it[" << index++ << "] " << " = (" << boundsMin[0] << "," << boundsMin[1] << "," << boundsMax[0] << "," << boundsMax[1] << ")\n";
 	}
 
+}
+int CIndexOperation::GetFileAmount()
+{
+	return FileAmount;
 }
